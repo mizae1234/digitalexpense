@@ -6,6 +6,15 @@ import {
     PRStatus, ExpenseStatus
 } from './mock-data';
 
+export interface CurrentUser {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    department: string;
+    avatar: string;
+}
+
 interface DemoContextType {
     // Data
     purchaseRequests: PurchaseRequest[];
@@ -36,9 +45,9 @@ interface DemoContextType {
     createPO: (rfqId: string, data: any) => Promise<PurchaseOrder>;
     updatePO: (id: string, data: Partial<PurchaseOrder>) => void;
 
-    // User context
+    // User context (from authenticated session)
+    currentUser: CurrentUser;
     currentUserRole: string;
-    setCurrentUserRole: (role: string) => void;
 
     // Refetch
     refetch: () => Promise<void>;
@@ -46,14 +55,15 @@ interface DemoContextType {
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
-export function DemoProvider({ children }: { children: React.ReactNode }) {
+export function DemoProvider({ children, initialUser }: { children: React.ReactNode; initialUser: CurrentUser }) {
     const [purchaseRequests, setPurchaseRequests] = useState<PurchaseRequest[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [rfqs, setRfqs] = useState<RFQ[]>([]);
     const [grs, setGrs] = useState<GoodsReceipt[]>([]);
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-    const [currentUserRole, setCurrentUserRole] = useState('MANAGER');
+    const currentUser = initialUser;
+    const currentUserRole = initialUser.role;
 
     const fetchData = async () => {
         try {
@@ -236,8 +246,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
             createGR,
             createPO,
             updatePO,
+            currentUser,
             currentUserRole,
-            setCurrentUserRole,
             refetch: fetchData
         }}>
             {children}

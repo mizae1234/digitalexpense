@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ApprovalStep {
+  id                String           @id
+  role              String
+  status            String           @default("PENDING")
+  date              String?
+  approverName      String?
+  comment           String?
+  purchaseRequestId String?
+  expenseId         String?
+  Expense           Expense?         @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  PurchaseRequest   PurchaseRequest? @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalTier {
+  id          String   @id
+  label       String
+  role        String
+  minAmount   Float
+  maxAmount   Float?
+  approverIds String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+}
+
+model Bank {
+  id        String   @id
+  code      String   @unique
+  nameTh    String
+  nameEn    String
+  swift     String?
+  color     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model Department {
+  id          String   @id
+  name        String   @unique
+  approverIds String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+}
+
+model Expense {
+  id                  String              @id
+  date                String
+  requesterId         String
+  requesterName       String
+  expenseType         String
+  paymentMethod       String
+  includesVat         Boolean             @default(false)
+  subtotal            Float
+  totalVat            Float
+  totalWht            Float
+  netTotal            Float
+  objective           String
+  notes               String?
+  status              String              @default("PENDING_HEAD")
+  payToName           String?
+  payToType           String?
+  payToTaxId          String?
+  bankIsInternational Boolean?
+  bankName            String?
+  bankBranch          String?
+  bankAccountNo       String?
+  bankSwift           String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime
+  bankAccountName     String?
+  expenseCode         String?             @unique
+  ApprovalStep        ApprovalStep[]
+  User                User                @relation(fields: [requesterId], references: [id])
+  ExpenseAttachment   ExpenseAttachment[]
+  ExpenseItem         ExpenseItem[]
+  ExpenseLog          ExpenseLog[]
+}
+
+model ExpenseAttachment {
+  id        String  @id
+  name      String
+  size      Int
+  type      String
+  expenseId String
+  key       String?
+  url       String?
+  Expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+}
+
+model ExpenseItem {
+  id            String  @id
+  description   String
+  amount        Float
+  vatRate       Float
+  whtRate       Float
+  vat           Float
+  wht           Float
+  net           Float
+  currency      String? @default("THB")
+  exchangeRate  Float?
+  foreignAmount Float?
+  expenseId     String
+  Expense       Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+}
+
+model ExpenseLog {
+  id        String   @id
+  action    String
+  actor     String?
+  role      String?
+  comment   String?
+  createdAt DateTime @default(now())
+  expenseId String
+  Expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+}
+
+model GRItem {
+  id             String       @id
+  itemId         String
+  receivedQty    Int
+  notes          String?
+  goodsReceiptId String
+  GoodsReceipt   GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+}
+
+model GoodsReceipt {
+  id              String          @id
+  prId            String          @unique
+  receivedDate    String
+  receivedBy      String
+  status          String          @default("PENDING")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  GRItem          GRItem[]
+  PurchaseRequest PurchaseRequest @relation(fields: [prId], references: [id])
+}
+
+model POItem {
+  id              String        @id
+  description     String
+  quantity        Int
+  unitPrice       Float
+  total           Float
+  purchaseOrderId String
+  PurchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+}
+
+model PRItem {
+  id                String          @id
+  description       String
+  quantity          Int
+  unitPrice         Float
+  total             Float
+  purchaseRequestId String
+  rfqId             String?
+  PurchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+  RFQ               RFQ?            @relation(fields: [rfqId], references: [id])
+}
+
+model PurchaseOrder {
+  id           String   @id
+  rfqId        String
+  prId         String
+  vendorId     String
+  vendorName   String
+  createdDate  String
+  deliveryDate String?
+  totalAmount  Float
+  status       String   @default("DRAFT")
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  POItem       POItem[]
+  Vendor       Vendor   @relation(fields: [vendorId], references: [id])
+}
+
+model PurchaseRequest {
+  id            String         @id
+  requestDate   String
+  requesterId   String
+  requesterName String
+  department    String
+  title         String
+  totalAmount   Float
+  status        String         @default("PENDING_MANAGER")
+  description   String         @default("")
+  poNumber      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime
+  ApprovalStep  ApprovalStep[]
+  GoodsReceipt  GoodsReceipt?
+  PRItem        PRItem[]
+  User          User           @relation(fields: [requesterId], references: [id])
+  RFQ           RFQ?
+}
+
+model Quotation {
+  id                 String               @id
+  vendorId           String
+  vendorName         String
+  totalPrice         Float
+  notes              String?
+  submittedDate      String
+  rfqId              String
+  RFQ                RFQ                  @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  QuotationItemPrice QuotationItemPrice[]
+}
+
+model QuotationItemPrice {
+  id          String    @id
+  itemId      String
+  price       Float
+  quotationId String
+  Quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}
+
+model RFQ {
+  id               String          @id
+  prId             String          @unique
+  prTitle          String
+  createdDate      String
+  dueDate          String
+  invitedVendors   String[]
+  selectedVendorId String?
+  status           String          @default("OPEN")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime
+  PRItem           PRItem[]
+  Quotation        Quotation[]
+  PurchaseRequest  PurchaseRequest @relation(fields: [prId], references: [id])
+}
+
+model User {
+  id              String            @id
+  name            String
+  email           String            @unique
+  passwordHash    String
+  role            String
+  department      String
+  avatar          String            @default("")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  Expense         Expense[]
+  PurchaseRequest PurchaseRequest[]
+}
+
+model Vendor {
+  id            String          @id
+  code          String          @unique
+  name          String
+  contact       String
+  taxId         String
+  email         String
+  status        String          @default("ACTIVE")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  PurchaseOrder PurchaseOrder[]
+}
