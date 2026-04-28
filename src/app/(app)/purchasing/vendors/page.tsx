@@ -32,7 +32,7 @@ export default function VendorManagementPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (editingVendor) {
-            updateVendor(editingVendor.id, formData);
+            updateVendor(editingVendor.id, formData as any);
         } else {
             await addVendor(formData);
         }
